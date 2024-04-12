@@ -5,10 +5,25 @@ use sqlx::{
     ConnectOptions,
 };
 
-#[derive(serde::Deserialize, Debug)]
+use crate::domain::SubscriberEmail;
+
+#[derive(serde::Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
+    // New field!
+    pub email_client: EmailClientSettings,
+}
+#[derive(serde::Deserialize)]
+pub struct EmailClientSettings {
+    pub base_url: String,
+    pub sender_email: String,
+    pub authorization_token: Secret<String>,
+}
+impl EmailClientSettings {
+    pub fn sender(&self) -> Result<SubscriberEmail, String> {
+        SubscriberEmail::parse(self.sender_email.clone())
+    }
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -80,7 +95,7 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
                 .separator("__"),
         )
         .build()?;
-    dbg!(settings.try_deserialize::<Settings>())
+    settings.try_deserialize::<Settings>()
 }
 /// The possible runtime environment for our application.
 
